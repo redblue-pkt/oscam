@@ -135,7 +135,6 @@ static int32_t set_provider_info(struct s_reader *reader, int32_t i)
 	{
 		add_provider(0x0100, provid, l_name + 8, "", "");
 	}
-
 	struct seca_data *csystem_data = reader->csystem_data;
 	csystem_data->valid_provider[i] = valid;
 	rdr_log(reader, "provider %d: %04X, valid: %i%s, expiry date: %4d/%02d/%02d", i + 1, provid, valid, l_name, year, month, day);
@@ -176,6 +175,9 @@ static int32_t set_provider_info(struct s_reader *reader, int32_t i)
 	else // add entitlement info
 	{
 		cs_add_entitlement(reader, reader->caid, provid, get_pbm(reader, i, fedc), 0, 0, mktime(&lt), (i) ? 6 : 7, 1);
+		char date[64];
+		strftime(date, sizeof(date)-1, "%Y/%m/%d", &lt);
+		cs_save_entitlement(reader, ++i, provid, "1970/01/01", date, cta_res + 2);
 	}
 
 	return OK;

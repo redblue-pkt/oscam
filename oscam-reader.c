@@ -684,6 +684,25 @@ S_ENTITLEMENT *cs_add_entitlement(struct s_reader *rdr, uint16_t caid, uint32_t 
 	return item;
 }
 
+S_ENTITLEMENT *cs_save_entitlement(struct s_reader *rdr, int id, uint32_t provid, char *start, char *end, char *provname)
+{
+	FILE *file_entitlement;
+	file_entitlement = fopen("/tmp/oscam_entitlements", "r");
+	if (file_entitlement == NULL) {
+		file_entitlement = fopen("/tmp/oscam_entitlements", "w");
+		fprintf(file_entitlement, "Entitlements:\n");
+	} else
+		file_entitlement = fopen("/tmp/oscam_entitlements", "a");
+	if (file_entitlement != NULL)
+	{
+		if (provname != NULL)
+			fprintf(file_entitlement, "%d. PROVID: %04X, VALID DATE: %s - %s, NAME: %s\n", id, provid, start, end, provname);
+	}
+	fclose(file_entitlement);
+
+	return 0;
+}
+
 /**
  * clears entitlements of reader.
  **/
@@ -693,6 +712,8 @@ void cs_clear_entitlement(struct s_reader *rdr)
 		{ return; }
 
 	ll_clear_data(rdr->ll_entitlements);
+
+	remove("/tmp/oscam_entitlements");
 }
 
 

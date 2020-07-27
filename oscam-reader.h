@@ -10,6 +10,7 @@ void hexserial_to_newcamd(uint8_t *source, uint8_t *dest, uint16_t caid);
 void newcamd_to_hexserial(uint8_t *source, uint8_t *dest, uint16_t caid);
 
 S_ENTITLEMENT *cs_add_entitlement(struct s_reader *rdr, uint16_t caid, uint32_t provid, uint64_t id, uint32_t class, time_t start, time_t end, uint8_t type, uint8_t add);
+S_ENTITLEMENT *cs_save_entitlement(struct s_reader *rdr, int id, uint32_t provid, char *start, char *end, char *provname);
 void cs_clear_entitlement(struct s_reader *rdr);
 
 int32_t hostResolve(struct s_reader *reader);

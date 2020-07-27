@@ -737,6 +737,7 @@ static int32_t cryptoworks_card_info(struct s_reader *reader)
 				if(cta_res[0] != 0x94)
 				{
 					char ds[16], de[16];
+					char chid[4];
 
 					// todo: add entitlements to list but produces a warning related to date variable
 					cs_add_entitlement(reader, reader->caid, reader->prid[i][3], b2i(2, cta_res + 6), 0,
@@ -745,6 +746,11 @@ static int32_t cryptoworks_card_info(struct s_reader *reader)
 
 					rdr_log(reader, "chid: %02X%02X, date: %s - %s, name: %s",
 							cta_res[6], cta_res[7], ds, de, trim((char *) cta_res + 10));
+
+					chid[0] = cta_res[6];
+					chid[1] = cta_res[7];
+
+					cs_save_entitlement(reader, ++i, reader->prid[i][3], ds, de, trim((char *) cta_res + 10));
 				}
 			}
 		}
@@ -770,6 +776,8 @@ static int32_t cryptoworks_card_info(struct s_reader *reader)
 					cta_res[27] = 0;
 					rdr_log(reader, "chid: %02X%02X, date: %s - %s, name: %s",
 							cta_res[6], cta_res[7], ds, de, trim((char *)cta_res + 10));
+
+					cs_save_entitlement(reader, ++i, reader->prid[i][3], ds, de, trim((char *) cta_res + 10));
 				}
 			}
 		}
