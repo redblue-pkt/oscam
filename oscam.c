@@ -474,6 +474,7 @@ static void write_versionfile(bool use_stdout)
 		write_cardreaderconf(CARDREADER_PCSC, "pcsc");
 		write_cardreaderconf(CARDREADER_SMART, "smartreader");
 		write_cardreaderconf(CARDREADER_DB2COM, "db2com");
+		write_cardreaderconf(CARDREADER_DYNAMITE, "dynamite");
 		write_cardreaderconf(CARDREADER_STAPI, "stapi");
 		write_cardreaderconf(CARDREADER_STAPI5, "stapi5");
 		write_cardreaderconf(CARDREADER_STINGER, "stinger");
@@ -1620,6 +1621,9 @@ const struct s_cardreader *cardreaders[] =
 #endif
 #ifdef CARDREADER_DRECAS
 	&cardreader_drecas,
+#endif
+#ifdef CARDREADER_DYNAMITE
+	&cardreader_dynamite,
 #endif
 #ifdef CARDREADER_MP35
 	&cardreader_mp35,

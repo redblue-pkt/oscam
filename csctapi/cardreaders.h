@@ -2,6 +2,7 @@
 #define CSCTAPI_CARDREADERS_H_
 
 extern const struct s_cardreader cardreader_db2com;
+extern const struct s_cardreader cardreader_dynamite;
 extern const struct s_cardreader cardreader_internal_sci;
 extern const struct s_cardreader cardreader_internal_cool;
 extern const struct s_cardreader cardreader_internal_azbox;
