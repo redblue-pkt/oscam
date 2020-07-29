@@ -78,6 +78,7 @@ const char *syslog_ident = "oscam";
 static char *oscam_pidfile;
 static char default_pidfile[64];
 int32_t oscam_port;
+const char *oscam_address = {0x00};
 
 int32_t exit_oscam = 0;
 static struct s_module modules[CS_MAX_MOD];
@@ -176,7 +177,8 @@ static void show_usage(void)
 		printf("                         .   1 - WebIf restart is active (default).\n");
 		printf("                         .   2 - Like 1, but also restart on segfaults.\n");
 	}
-	printf(" -p, --port <num>	 | Set http port \n");
+	printf(" -p, --port <num>	 | Set http port\n");
+	printf(" -a  --address-range <addr>	 | Set http address range\n");
 	printf(" -w, --wait <secs>       | Set how much seconds to wait at startup for the\n");
 	printf("                         . system clock to be set correctly. Default: 60\n");
 	printf("\n Logging:\n");
@@ -207,7 +209,7 @@ static void show_usage(void)
 		printf(" -u, --utf8              | Enable WebIf support for UTF-8 charset.\n");
 	}
 	printf("\n Debug parameters:\n");
-	printf(" -a, --crash-dump        | Write oscam.crash file on segfault. This option\n");
+	printf(" -D, --crash-dump        | Write oscam.crash file on segfault. This option\n");
 	printf("                         . needs GDB to be installed and OSCam executable to\n");
 	printf("                         . contain the debug information (run oscam-XXXX.debug)\n");
 	printf(" -s, --capture-segfaults | Capture segmentation faults.\n");
@@ -221,15 +223,15 @@ static void show_usage(void)
 
 /* Keep the options sorted */
 #if defined(WITH_STAPI) || defined(WITH_STAPI5)
-static const char short_options[] = "aB:fc:d:g:hI:p:e:r:Sst:uVw:";
+static const char short_options[] = "BD:fc:d:a:g:hI:p:e:r:Sst:uVw:";
 #else
-static const char short_options[] = "aB:bc:d:g:hI:p:e:r:Sst:uVw:";
+static const char short_options[] = "BD:bc:d:a:g:hI:p:e:r:Sst:uVw:";
 #endif
 
 /* Keep the options sorted by short option */
 static const struct option long_options[] =
 {
-	{ "crash-dump",         no_argument,       NULL, 'a' },
+	{ "crash-dump",         no_argument,       NULL, 'D' },
 	{ "pidfile",            required_argument, NULL, 'B' },
 #if defined(WITH_STAPI) || defined(WITH_STAPI5)
 	{ "foreground",         no_argument,       NULL, 'f' },
@@ -238,6 +240,7 @@ static const struct option long_options[] =
 #endif
 	{ "config-dir",         required_argument, NULL, 'c' },
 	{ "port",		required_argument, NULL, 'p' },
+	{ "address-range",	required_argument, NULL, 'a' },
 	{ "debug",              required_argument, NULL, 'd' },
 	{ "gcollect",           required_argument, NULL, 'g' },
 	{ "help",               no_argument,       NULL, 'h' },
@@ -268,7 +271,7 @@ static void parse_cmdline_params(int argc, char **argv)
 			{ fprintf(stderr, "ERROR: Unknown command line parameter: %s\n", argv[optind - 1]); }
 		switch(i)
 		{
-		case 'a': // --crash-dump
+		case 'D': // --crash-dump
 			cs_dump_stack = 1;
 			break;
 		case 'B': // --pidfile
@@ -285,6 +288,9 @@ static void parse_cmdline_params(int argc, char **argv)
 			break;
 		case 'p': // --port
 			oscam_port = atoi(optarg);
+			break;
+		case 'a': // --address-range
+			oscam_address = optarg;
 			break;
 		case 'd': // --debug
 			cs_dblevel = atoi(optarg);
@@ -1813,20 +1819,8 @@ int32_t main(int32_t argc, char *argv[])
 	}
 	if(oscam_pidfile)
 		{ pidfile_create(oscam_pidfile); }
+
 	cs_init_statistics();
-#if 0
-	if(oscam_port == 0 && cfg.http_port)
-		{ oscam_port = cfg.http_port; }
-	if(oscam_port == 0)
-	{
-		oscam_port = DEFAULT_HTTP_PORT;
-	}
-
-	if(!oscam_port)
-		oscam_port = DEFAULT_HTTP_PORT;
-#endif
-printf("http port %d\n", oscam_port);
-
 	coolapi_open_all();
 	init_stat();
 	ssl_init();

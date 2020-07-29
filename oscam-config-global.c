@@ -16,6 +16,7 @@
 #define DEFAULT_HTTP_PORT 8888
 extern int32_t oscam_port;
 #define DEFAULT_HTTP_ALLOW "127.0.0.1,192.168.0.0-192.168.255.255,10.0.0.0-10.255.255.255,::1"
+extern const char *oscam_address;
 
 static void disablelog_fn(const char *token, char *value, void *UNUSED(setting), FILE *f)
 {
@@ -1429,10 +1430,18 @@ int32_t init_config(void)
 		else
 			cfg.http_port = oscam_port;
 		char *default_allowed;
-		if ((default_allowed = cs_strdup(DEFAULT_HTTP_ALLOW)))
-		{
-			chk_iprange(default_allowed, &cfg.http_allowed);
-			free(default_allowed);
+		if (!oscam_address) {
+			if ((default_allowed = cs_strdup(DEFAULT_HTTP_ALLOW)))
+			{
+				chk_iprange(default_allowed, &cfg.http_allowed);
+				free(default_allowed);
+			}
+		} else {
+			if ((default_allowed = cs_strdup(oscam_address)))
+			{
+				chk_iprange(default_allowed, &cfg.http_allowed);
+				free(default_allowed);
+			}
 		}
 #endif
 		NULLFREE(cfg.logfile);
