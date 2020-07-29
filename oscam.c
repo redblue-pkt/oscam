@@ -77,6 +77,7 @@ extern char *config_mak;
 const char *syslog_ident = "oscam";
 static char *oscam_pidfile;
 static char default_pidfile[64];
+int32_t oscam_port;
 
 int32_t exit_oscam = 0;
 static struct s_module modules[CS_MAX_MOD];
@@ -175,6 +176,7 @@ static void show_usage(void)
 		printf("                         .   1 - WebIf restart is active (default).\n");
 		printf("                         .   2 - Like 1, but also restart on segfaults.\n");
 	}
+	printf(" -p, --port <num>	 | Set http port \n");
 	printf(" -w, --wait <secs>       | Set how much seconds to wait at startup for the\n");
 	printf("                         . system clock to be set correctly. Default: 60\n");
 	printf("\n Logging:\n");
@@ -198,7 +200,7 @@ static void show_usage(void)
 	printf("                         .  4096 - CWC logging.\n");
 	printf("                         . 65535 - Debug all.\n");
 	printf("\n Settings:\n");
-	printf(" -p, --pending-ecm <num> | Set the maximum number of pending ECM packets.\n");
+	printf(" -e, --pending-ecm <num> | Set the maximum number of pending ECM packets.\n");
 	printf("                         . Default: 32 Max: 4096\n");
 	if(config_enabled(WEBIF))
 	{
@@ -219,9 +221,9 @@ static void show_usage(void)
 
 /* Keep the options sorted */
 #if defined(WITH_STAPI) || defined(WITH_STAPI5)
-static const char short_options[] = "aB:fc:d:g:hI:p:r:Sst:uVw:";
+static const char short_options[] = "aB:fc:d:g:hI:p:e:r:Sst:uVw:";
 #else
-static const char short_options[] = "aB:bc:d:g:hI:p:r:Sst:uVw:";
+static const char short_options[] = "aB:bc:d:g:hI:p:e:r:Sst:uVw:";
 #endif
 
 /* Keep the options sorted by short option */
@@ -235,11 +237,12 @@ static const struct option long_options[] =
 	{ "daemon",             no_argument,       NULL, 'b' },
 #endif
 	{ "config-dir",         required_argument, NULL, 'c' },
+	{ "port",		required_argument, NULL, 'p' },
 	{ "debug",              required_argument, NULL, 'd' },
 	{ "gcollect",           required_argument, NULL, 'g' },
 	{ "help",               no_argument,       NULL, 'h' },
 	{ "syslog-ident",       required_argument, NULL, 'I' },
-	{ "pending-ecm",        required_argument, NULL, 'p' },
+	{ "pending-ecm",        required_argument, NULL, 'e' },
 	{ "restart",            required_argument, NULL, 'r' },
 	{ "show-sensitive",     no_argument,       NULL, 'S' },
 	{ "capture-segfaults",  no_argument,       NULL, 's' },
@@ -280,6 +283,9 @@ static void parse_cmdline_params(int argc, char **argv)
 		case 'c': // --config-dir
 			cs_strncpy(cs_confdir, optarg, sizeof(cs_confdir));
 			break;
+		case 'p': // --port
+			oscam_port = atoi(optarg);
+			break;
 		case 'd': // --debug
 			cs_dblevel = atoi(optarg);
 			break;
@@ -293,7 +299,7 @@ static void parse_cmdline_params(int argc, char **argv)
 		case 'I': // --syslog-ident
 			syslog_ident = optarg;
 			break;
-		case 'p': // --pending-ecm
+		case 'e': // --pending-ecm
 			max_pending = atoi(optarg) <= 0 ? 32 : MIN(atoi(optarg), 4096);
 			break;
 		case 'r': // --restart
@@ -1808,6 +1814,19 @@ int32_t main(int32_t argc, char *argv[])
 	if(oscam_pidfile)
 		{ pidfile_create(oscam_pidfile); }
 	cs_init_statistics();
+#if 0
+	if(oscam_port == 0 && cfg.http_port)
+		{ oscam_port = cfg.http_port; }
+	if(oscam_port == 0)
+	{
+		oscam_port = DEFAULT_HTTP_PORT;
+	}
+
+	if(!oscam_port)
+		oscam_port = DEFAULT_HTTP_PORT;
+#endif
+printf("http port %d\n", oscam_port);
+
 	coolapi_open_all();
 	init_stat();
 	ssl_init();

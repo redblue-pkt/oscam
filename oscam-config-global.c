@@ -14,6 +14,7 @@
 #define cs_conf "oscam.conf"
 
 #define DEFAULT_HTTP_PORT 8888
+extern int32_t oscam_port;
 #define DEFAULT_HTTP_ALLOW "127.0.0.1,192.168.0.0-192.168.255.255,10.0.0.0-10.255.255.255,::1"
 
 static void disablelog_fn(const char *token, char *value, void *UNUSED(setting), FILE *f)
@@ -1423,7 +1424,10 @@ int32_t init_config(void)
 	{
 		// no oscam.conf but webif is included in build, set it up for lan access and tweak defaults
 #ifdef WEBIF
-		cfg.http_port = DEFAULT_HTTP_PORT;
+		if (!oscam_port)
+			cfg.http_port = DEFAULT_HTTP_PORT;
+		else
+			cfg.http_port = oscam_port;
 		char *default_allowed;
 		if ((default_allowed = cs_strdup(DEFAULT_HTTP_ALLOW)))
 		{
