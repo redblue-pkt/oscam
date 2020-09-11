@@ -17,14 +17,77 @@
 
 #define GPIO_PIN (1 << (reader->detect - 4))
 
-#define IOCTL_SET_PHOENIX_357 0x000000c1
-#define IOCTL_SET_PHOENIX_368 0x000000c2
-#define IOCTL_SET_PHOENIX_400 0x000000c3
-#define IOCTL_SET_PHOENIX_600 0x000000c4
-#define IOCTL_SET_SMARTMOUSE_357 0x000000c5
-#define IOCTL_SET_SMARTMOUSE_368 0x000000c6
-#define IOCTL_SET_SMARTMOUSE_400 0x000000c7
-#define IOCTL_SET_SMARTMOUSE_600 0x000000c8
+typedef enum {
+	NOFW		= 0,
+	READY		= 1,
+	VEND_AX		= 2,
+	START		= 3,
+	MOUSE_PHOENIX	= 4,
+	PHOENIX_357	= 5,
+	PHOENIX_368	= 6,
+	PHOENIX_400	= 7,
+	PHOENIX_600	= 8,
+	SMARTMOUSE_357	= 9,
+	SMARTMOUSE_368	= 10,
+	SMARTMOUSE_400	= 11,
+	SMARTMOUSE_600	= 12,
+	CARDPROGRAMMER	= 13,
+} dynamite_device_status_t;
+
+static const char *dynamite_device_status[] = {
+	"nofw",
+	"ready",
+	"vend_ax",
+	"start",
+	"mouse_phoenix",
+	"phoenix357",
+	"phoenix368",
+	"phoenix400",
+	"phoenix600",
+	"smartmouse357",
+	"smartmouse368",
+	"smartmouse400",
+	"smartmopuse600",
+	"cardprogrammer",
+};
+
+typedef enum {
+	NONE_DEVICE = 0,
+	DYNAMITE_DEVICE = 1,
+	DYNAMITE_PLUS_DEVICE = 2,
+	DYNAMITE_TINY_DEVICE = 3,
+} dynamite_device_list_t;
+
+static const char *dynamite_device_list[] = {
+	"nodevice",
+	"dynamite",
+	"dynamiteplus",
+	"dynamitetiny",
+};
+
+typedef enum {
+	IOCTL_SET_PHOENIX_357 = 0x000000c1,
+	IOCTL_SET_PHOENIX_368 = 0x000000c2,
+	IOCTL_SET_PHOENIX_400 = 0x000000c3,
+	IOCTL_SET_PHOENIX_600 = 0x000000c4,
+	IOCTL_SET_SMARTMOUSE_357 = 0x000000c5,
+	IOCTL_SET_SMARTMOUSE_368 = 0x000000c6,
+	IOCTL_SET_SMARTMOUSE_400 = 0x000000c7,
+	IOCTL_SET_SMARTMOUSE_600 = 0x000000c8,
+	IOCTL_SET_CARDPROGRAMMER = 0x00000c10,
+	IOCTL_SEND_BULK_COMMAND = 0x00000c11,
+	IOCTL_RECV_BULK_COMMAND = 0x00000c12,
+	IOCTL_SEND_VENDOR_COMMAND = 0x00000c13,
+	IOCTL_RECV_VENDOR_COMMAND = 0x00000c14,
+	IOCTL_DEVICE_INFORMATION_COMMAND = 0x00000c15,
+} _dynamite_ioctl_command_t;
+
+struct dynamite_device_information_command {
+	int device;
+	int status;
+	int vid;
+	int pid;
+};
 
 #define DYNAMITE_DEVICE "/dev/dynamite_programmer"
 
@@ -77,6 +140,8 @@ static int32_t get_gpio(struct s_reader *reader)
 
 int32_t Dynamite_Set_Clock(struct s_reader *reader, unsigned int mhz)
 {
+	struct dynamite_device_information_command dynamite_info_cmd;
+
 	rdr_log_dbg(reader, D_IFD, "Setting Smartcard clock at: %d", mhz);
 
 	int fd = open(DYNAMITE_DEVICE, O_RDWR);
@@ -86,49 +151,72 @@ int32_t Dynamite_Set_Clock(struct s_reader *reader, unsigned int mhz)
 		return ERROR;
 	}
 
+	if (ioctl(fd, IOCTL_DEVICE_INFORMATION_COMMAND, &dynamite_info_cmd) < 0)
+	{
+		rdr_log(reader, "ERROR: Send ioctl command to device %s (errno=%d %s)",
+			DYNAMITE_DEVICE, errno, strerror(errno));
+		return ERROR;
+	}
+	rdr_log(reader, "Found device: %s, vid: 0x%04x, pid: 0x%04x, status: %s", dynamite_device_list[dynamite_info_cmd.device], dynamite_info_cmd.vid, dynamite_info_cmd.pid, dynamite_device_status[dynamite_info_cmd.status]);
+
 	//DTR down
 	IO_Serial_DTR_Set(reader);
 
 	if(mhz == 357)
 	{
-		rdr_log(reader, "%s: Using oscillator 1 (3.57MHz)", __func__);
+		if (dynamite_info_cmd.status != PHOENIX_357) {
+			rdr_log(reader, "%s: Using oscillator 1 (3.57MHz)", __func__);
+			if (ioctl(fd, IOCTL_SET_PHOENIX_357) < 0) {
+				rdr_log(reader, "ERROR: Send ioctl command to device %s (errno=%d %s)",
+					DYNAMITE_DEVICE, errno, strerror(errno));
+				return ERROR;
+			}
+		}
+	}
+	else if(mhz == 368)
+	{
+		if (dynamite_info_cmd.status != PHOENIX_368) {
+			rdr_log(reader, "%s: Using oscillator 2 (3.68MHz)", __func__);
+			if (ioctl(fd, IOCTL_SET_PHOENIX_368) < 0) {
+				rdr_log(reader, "ERROR: Send ioctl command to device %s (errno=%d %s)",
+					DYNAMITE_DEVICE, errno, strerror(errno));
+				return ERROR;
+			}
+		}
+	}
+	else if(mhz == 400)
+	{
+		if (dynamite_info_cmd.status != PHOENIX_400) {
+			rdr_log(reader, "%s: Using oscillator 3 (4.00MHz)", __func__);
+			if (ioctl(fd, IOCTL_SET_PHOENIX_400) < 0) {
+				rdr_log(reader, "ERROR: Send ioctl command to device %s (errno=%d %s)",
+					DYNAMITE_DEVICE, errno, strerror(errno));
+				return ERROR;
+			}
+		}
+	}
+	else if(mhz == 600)
+	{
+		if (dynamite_info_cmd.status != PHOENIX_600) {
+			rdr_log(reader, "%s: Using oscillator 4 (6.00MHz)", __func__);
+			if (ioctl(fd, IOCTL_SET_PHOENIX_600) < 0) {
+				rdr_log(reader, "ERROR: Send ioctl command to device %s (errno=%d %s)",
+					DYNAMITE_DEVICE, errno, strerror(errno));
+				return ERROR;
+			}
+		}
+	}
+	else
+	{
+		rdr_log(reader, "%s: Dynamite support only mhz=357, mhz=368 mhz=400 or mhz=600", __func__);
+		rdr_log(reader, "%s: Forced oscillator 1 (3.57MHz)", __func__);
 		if (ioctl(fd, IOCTL_SET_PHOENIX_357) < 0) {
 			rdr_log(reader, "ERROR: Send ioctl command to device %s (errno=%d %s)",
 				DYNAMITE_DEVICE, errno, strerror(errno));
 			return ERROR;
 		}
-	}
-	else if(mhz == 368)
-	{
-		rdr_log(reader, "%s: Using oscillator 2 (3.68MHz)", __func__);
-		if (ioctl(fd, IOCTL_SET_PHOENIX_368) < 0) {
-			rdr_log(reader, "ERROR: Send ioctl command to device %s (errno=%d %s)",
-				DYNAMITE_DEVICE, errno, strerror(errno));
-			return ERROR;
-		}
-	}
-	else if(mhz == 400)
-	{
-		rdr_log(reader, "%s: Using oscillator 3 (4.00MHz)", __func__);
-		if (ioctl(fd, IOCTL_SET_PHOENIX_400) < 0) {
-			rdr_log(reader, "ERROR: Send ioctl command to device %s (errno=%d %s)",
-				DYNAMITE_DEVICE, errno, strerror(errno));
-			return ERROR;
-		}
-	}
-	else if(mhz == 600)
-	{
-		rdr_log(reader, "%s: Using oscillator 4 (6.00MHz)", __func__);
-		if (ioctl(fd, IOCTL_SET_PHOENIX_600) < 0) {
-			rdr_log(reader, "ERROR: Send ioctl command to device %s (errno=%d %s)",
-				DYNAMITE_DEVICE, errno, strerror(errno));
-			return ERROR;
-		}
-	}
-	else
-	{
-		rdr_log_dbg(reader, D_IFD, "Clock speed not recognized. Check configuration");
-		return ERROR;
+		reader->mhz = 357;
+		reader->cardmhz = 357;
 	}
 
 	unsigned char dat[ATR_MAX_SIZE];
@@ -146,9 +234,6 @@ int32_t Dynamite_Init(struct s_reader *reader)
 {
 	const struct s_cardreader *crdr_ops = reader->crdr;
 	if (!crdr_ops) return ERROR;
-
-	// First set card in reset state, to not change any parameters while communication ongoing
-	IO_Serial_RTS_Set(reader);
 
 	if(crdr_ops->flush) { IO_Serial_Flush(reader); }
 
@@ -257,8 +342,6 @@ int32_t Dynamite_Close(struct s_reader *reader)
 
 static int32_t dynamite_init(struct s_reader *reader)
 {
-	unsigned int clock_mhz = 0;
-
 	const struct s_cardreader *crdr_ops = reader->crdr;
 	if (!crdr_ops) return ERROR;
 
@@ -267,11 +350,6 @@ static int32_t dynamite_init(struct s_reader *reader)
 		reader->crdr = crdr_ops = &cardreader_db2com;
 		return crdr_ops->reader_init(reader);
 	}
-
-	clock_mhz = reader->mhz;
-
-	if(reader->mhz != reader->cardmhz)
-		{ reader->mhz = reader->cardmhz; }
 
 	reader->handle = open(reader->device,  O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if(reader->handle < 0)
@@ -289,7 +367,7 @@ static int32_t dynamite_init(struct s_reader *reader)
 
 	// SET CLOCK
 	cs_sleepms(200);
-	Dynamite_Set_Clock(reader, clock_mhz);
+	Dynamite_Set_Clock(reader, reader->mhz);
 
 	return OK;
 }
